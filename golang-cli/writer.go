@@ -1,6 +1,7 @@
 package main
 
 import (
+  "bufio"
 	"bytes"
 	"errors"
   "fmt"
@@ -51,7 +52,7 @@ type bypass struct {
 // New returns a new Writer with defaults
 func New() *Writer {
 	return &Writer{
-		Out:             Out,
+		Out:             bufio.NewWriter(os.Stdout),
 		RefreshInterval: RefreshInterval,
 
 		mtx: &sync.Mutex{},

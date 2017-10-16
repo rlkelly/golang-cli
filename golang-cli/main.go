@@ -15,7 +15,9 @@ const shift = uint(^uint(0)>>63) << 4
 const PCT = 0x8000 << shift
 
 var Screen *bytes.Buffer = new(bytes.Buffer)
-var Output *bufio.Writer = bufio.NewWriter(os.Stdout)
+// var Output *bufio.Writer = bufio.NewWriter(os.Stdout)
+var Output = os.Stdout
+var first = true
 
 type Table struct {
 	tabwriter.Writer
@@ -45,7 +47,7 @@ func Flush() {
 		Output.WriteString(str + "\n")
 	}
 
-	Output.Flush()
+	// Output.Flush()
 	Screen.Reset()
 }
 
@@ -69,14 +71,14 @@ func PrintWithOffset(offset int, a ...interface{}) (n int, err error) {
   return fmt.Fprintln(Output, a...)
 }
 
-func handleResponse(response string, box *Box) {
+func handleResponse(response string, box *Box, writer *Writer) {
   switch response {
   case "test":
-    Output.Flush()
+    // Output.Flush()
     fillScreen("Z")
-    mainMenu(response, box)
+    mainMenu(response, box, writer)
   case "exit":
-    Output.Flush()
+    // Output.Flush()
     MoveCursor(1, 1)
     // clearScreen()
     Clear()
@@ -84,8 +86,23 @@ func handleResponse(response string, box *Box) {
     c.Stdout = os.Stdout
     c.Run()
     os.Exit(1)
+  case "1":
+    first = false
+    MoveCursor(2, 2)
+    slowPrinter("Select from the menu:", 125, first)
+    MoveCursor(2, 4)
+    slowPrinter("1)  First", 50, first)
+    MoveCursor(2, 5)
+    slowPrinter("2)  Second", 50, first)
+
+    MoveCursor(2, 10)
+    fmt.Fprintln(Output, strings.Repeat(" ", 25))
+    MoveCursor(2, 10)
+    Print("set> ")
+    first = true
+
   default:
-    mainMenu(response, box)
+    mainMenu(response, box, writer)
   }
 }
 
@@ -106,47 +123,58 @@ func clearScreen() {
   }
 }
 
-func mainMenu(text string, box *Box) {
+func mainMenu(text string, box *Box, writer *Writer) {
   MoveCursor(1, 1)
   Print(box.String())
 
   MoveCursor(2, 2)
-  MoveCursor(2, 2)
-  Print("Hello ", text)
+  slowPrinter("Select from the menu:", 125, first)
   MoveCursor(2, 4)
+  slowPrinter("1)  Social-Engineer", 50, first)
+  MoveCursor(2, 5)
+  slowPrinter("2)  Other Stuff", 50, first)
+  MoveCursor(2, 6)
+  slowPrinter("3)  Third Party Modules", 50, first)
+
+  MoveCursor(2, 10)
   fmt.Fprintln(Output, strings.Repeat(" ", 25))
-  MoveCursor(2, 4)
+  MoveCursor(2, 10)
   Print("set> ")
 }
 
-func slowPrinter(text string, spacing int) {
-  MoveCursor(6, 3)
-  for _, r := range text {
-    Print(string(r))
-    // time.Sleep(time.Millisecond)
+func slowPrinter(text string, spacing int, first bool) {
+  if first {
+    for _, r := range text {
+      Print(string(r))
+      time.Sleep(time.Millisecond * time.Duration(spacing))
+    }
+    time.Sleep(time.Millisecond * time.Duration(spacing))
+    return
   }
+  Print(text)
 }
 
 func main() {
   scanner := bufio.NewScanner(os.Stdin)
   Clear()
-  Output.Flush()
+  // Output.Flush()
   box := NewBox(Width() / 2, Height() - 1)
   writer := New()
   writer.Start()
 
-  for i := 0; i <= 100; i++ {
-    fmt.Fprintf(writer, "Loading.. (%d/%d) GB\n", i, 100)
-    time.Sleep(time.Millisecond * 25)
-  }
-
-  writer.Stop()
+  // for i := 0; i <= 100; i++ {
+  //   fmt.Fprintf(writer, "Loading.. (%d/%d) GB\n", i, 100)
+  //   time.Sleep(time.Millisecond * 25)
+  // }
 
   for {
     MoveCursor(1, 1)
-    handleResponse(scanner.Text(), box)
-    Output.Flush()
-    clearScreen()
+    handleResponse(scanner.Text(), box, writer)
+
+    MoveCursor(7, 10)
+
     scanner.Scan()
+    clearScreen()
+    first = false
   }
 }
